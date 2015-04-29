@@ -14,6 +14,7 @@ import Window
 port movement : Signal (Int, Int)
 port isLocked : Signal Bool
 
+
 -- PORTS OUTGOING --
 
 port requestPointerLock : Signal ()
@@ -28,6 +29,7 @@ port exitPointerLock =
     <| Signal.filter identity False
     <| Signal.sampleOn (Keyboard.isDown 27) isLocked
 
+
 -- CONFIG --
 
 width   = 900
@@ -38,6 +40,7 @@ hHeight = height / 2
 -- pixels per frame
 velMagIncrease = 0.01
 velMagIncrease' = velMagIncrease / 16
+
 
 -- HELPERS --
 
@@ -102,6 +105,7 @@ initialGame = { player = initialPlayer,
                 enemy  = initialEnemy,
                 state  = Waiting }
 
+
 -- FORMS --
 
 playerForm : Player -> Form
@@ -109,6 +113,7 @@ playerForm player = circle player.radius |> filled black
 
 enemyForm : Player -> Form
 enemyForm enemy = circle enemy.radius |> filled red
+
 
 -- UPDATE --
 
@@ -148,6 +153,7 @@ updateGame e g = case e of
                        Dead -> { initialGame | state <- Play }
                        _    -> g
 
+
 -- RENDER --
 
 renderPlayer : Player -> Form
@@ -171,6 +177,7 @@ render (w, h) game = color gray <| container w h middle
                                 <| color white
                                 <| collage width height
                                 <| renderToCollage game
+
 
 -- SIGNAL GRAPH --
 
