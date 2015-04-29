@@ -11,7 +11,7 @@ import Window
 
 -- PORTS INCOMING --
 
-port movement : Signal (Int, Int)
+port movement : Signal (Float, Float)
 port isLocked : Signal Bool
 
 
@@ -181,11 +181,8 @@ render (w, h) game = color gray <| container w h middle
 
 -- SIGNAL GRAPH --
 
-movement' : Signal Vec
-movement' = map toVec movement
-
 position : Signal Vec
-position = foldp (\p p' -> vecAdd p p' |> boundedVec) (0, 0) movement'
+position = foldp (\p p' -> vecAdd p p' |> boundedVec) (0, 0) movement
 
 events : Signal GameEvent
 events = mergeMany
