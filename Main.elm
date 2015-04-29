@@ -165,12 +165,13 @@ renderEnemy enemy = move (toMove enemy.pos) (enemyForm enemy)
 renderToCollage : Game -> List Form
 renderToCollage game = case game.state of
                          Waiting ->
-                           [ text <| fromString "Click to lock pointer and start game"]
+                           [ scale 2 <| text <| fromString "Click to lock pointer and start game"]
                          Play ->
                            [ renderPlayer game.player,
                              renderEnemy game.enemy ]
                          Dead ->
-                           [ text <| fromString "You're dead, click to play again"]
+                           [ scale 2 <| text <| fromString "You're dead",
+                             move (0, -30) <| scale 1.5 <| text <| fromString "Click to play again" ]
 
 render : (Int, Int) -> Game -> Element
 render (w, h) game = color gray <| container w h middle
