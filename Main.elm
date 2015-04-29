@@ -112,7 +112,7 @@ playerForm : Player -> Form
 playerForm player = circle player.radius |> filled black
 
 enemyForm : Player -> Form
-enemyForm enemy = circle enemy.radius |> filled red
+enemyForm enemy = circle enemy.radius |> filled darkRed
 
 
 -- UPDATE --
