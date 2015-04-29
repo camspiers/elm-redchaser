@@ -17,46 +17,58 @@ function initArgs(args) {
   return args;
 }
 
-function isLocked(node) {
-  return (
-    node === document.pointerLockElement ||
-    node === document.mozPointerLockElement ||
-    node === document.webkitPointerLockElement
-  );
-}
-
-function isFullscreen(node) {
-  return (
-    document.webkitFullscreenElement === node ||
-    document.mozFullscreenElement === node ||
-    document.mozFullScreenElement === node
-  );
-}
-
 function setup(component, node) {
-  function request() {
-    document.addEventListener('pointerlockchange', pointerLockChange, false);
-    document.addEventListener('mozpointerlockchange', pointerLockChange, false);
-    document.addEventListener('webkitpointerlockchange', pointerLockChange, false);
+  var supportsPointerLock = true;
+  var REQUEST_POINTER_LOCK;
+  var EXIT_POINTER_LOCK;
+  var POINTER_LOCK_ELEMENT;
+  var POINTER_LOCK_CHANGE;
+  var MOVEMENT_X;
+  var MOVEMENT_Y;
 
-    var requestPointerLock = (
-      node.requestPointerLock  ||
-      node.mozRequestPointerLock ||
-      node.webkitRequestPointerLock
-    );
-    requestPointerLock.call(node);
+  if (node.requestPointerLock) {
+    REQUEST_POINTER_LOCK = 'requestPointerLock';
+    EXIT_POINTER_LOCK = 'exitPointerLock';
+    POINTER_LOCK_ELEMENT = 'pointerLockElement';
+    POINTER_LOCK_CHANGE = 'pointerlockchange';
+    MOVEMENT_X = 'movementX';
+    MOVEMENT_Y = 'movementY';
+  } else if (node.mozRequestPointerLock) {
+    REQUEST_POINTER_LOCK = 'mozRequestPointerLock';
+    EXIT_POINTER_LOCK = 'mozExitPointerLock';
+    POINTER_LOCK_ELEMENT = 'mozPointerLockElement';
+    POINTER_LOCK_CHANGE = 'mozpointerlockchange';
+    MOVEMENT_X = 'mozMovementX';
+    MOVEMENT_Y = 'mozMovementY';
+  } else if (node.webkitRequestPointerLock) {
+    REQUEST_POINTER_LOCK = 'webkitRequestPointerLock';
+    EXIT_POINTER_LOCK = 'webkitExitPointerLock';
+    POINTER_LOCK_ELEMENT = 'webkitPointerLockElement';
+    POINTER_LOCK_CHANGE = 'webkitpointerlockchange';
+    MOVEMENT_X = 'webkitMovementX';
+    MOVEMENT_Y = 'webkitMovementY';
+  } else {
+    supportsPointerLock = false;
+  }
+
+  function isLocked(node) {
+    return node === document[POINTER_LOCK_ELEMENT];
+  }
+
+  // REAL HANDLERS
+
+  function request() {
+    document.addEventListener(POINTER_LOCK_CHANGE, pointerLockChange, false);
+    node[REQUEST_POINTER_LOCK]();
   }
 
   function exit() {
-    var exitPointerLock = (
-      document.exitPointerLock  ||
-      document.mozExitPointerLock ||
-      document.webkitExitPointerLock
-    );
-    exitPointerLock.call(document);
-    document.removeEventListener('pointerlockchange', pointerLockChange);
-    document.removeEventListener('mozpointerlockchange', pointerLockChange);
-    document.removeEventListener('webkitpointerlockchange', pointerLockChange);
+    document[EXIT_POINTER_LOCK]();
+    document.removeEventListener(POINTER_LOCK_CHANGE, pointerLockChange);
+  }
+
+  function move(e) {
+    component.ports.movement.send([e[MOVEMENT_X], e[MOVEMENT_Y]]);
   }
 
   function pointerLockChange() {
@@ -69,21 +81,50 @@ function setup(component, node) {
     }
   }
 
-  function move(e) {
-    var movementX = e.movementX || e.mozMovementX || e.webkitMovementX || 0;
-    var movementY = e.movementY || e.mozMovementY || e.webkitMovementY || 0;
-    component.ports.movement.send([movementX, movementY]);
+  // POLYFILLED HANDLERS
+
+  function polyfillRequest() {
+    document.body.style.cursor = 'none';
+    node.addEventListener('mousemove', polyfillMove);
+    component.ports.isLocked.send(true);
+  }
+
+  function polyfillExit() {
+    document.body.style.cursor = 'pointer';
+    node.removeEventListener('mousemove', polyfillMove);
+    component.ports.isLocked.send(false);
+  }
+
+  var prevX = 0;
+  var prevY = 0;
+
+  function polyfillMove(e) {
+    var clientX = e.clientX;
+    var clientY = e.clientY;
+    component.ports.movement.send([clientX - prevX, clientY - prevY]);
+    prevX = clientX;
+    prevY = clientY;
+  }
+
+  var requestPointerLock;
+  var exitPointerLock;
+
+  if (supportsPointerLock) {
+    requestPointerLock = request;
+    exitPointerLock = exit;
+  } else {
+    requestPointerLock = polyfillRequest;
+    exitPointerLock = polyfillExit;
   }
 
   if (component.ports.requestPointerLock) {
-    component.ports.requestPointerLock.subscribe(request);
+    component.ports.requestPointerLock.subscribe(requestPointerLock);
   }
   if (component.ports.exitPointerLock) {
-    component.ports.exitPointerLock.subscribe(exit);
+    component.ports.exitPointerLock.subscribe(exitPointerLock);
   }
-
-  component.requestPointerLock = request;
-  component.exitPointerLock = exit;
+  component.requestPointerLock = requestPointerLock;
+  component.exitPointerLock = exitPointerLock;
 
   return component;
 }
