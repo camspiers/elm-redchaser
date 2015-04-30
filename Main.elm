@@ -8,6 +8,8 @@ import Signal exposing (..)
 import Text exposing (fromString)
 import Time exposing (..)
 import Window
+import Random exposing (..)
+import List
 
 -- PORTS INCOMING --
 
@@ -73,7 +75,7 @@ toMove (x, y) = (x - hWidth, -y + hHeight)
 toVec : (Int, Int) -> Vec
 toVec (x, y) = (toFloat x, toFloat y)
 
-hit : Player -> Player -> Bool
+hit : Actor -> Actor -> Bool
 hit player enemy = (vecLen <| vecSub player.pos enemy.pos) < player.radius + enemy.radius
 
 boundX : number -> number
@@ -89,38 +91,39 @@ boundedVec (x, y) = (boundX x, boundY y)
 -- MODEL --
 
 type alias Vec = (Float, Float)
-type alias Game = { player: Player, enemy: Player, state: GameState }
-type alias Player = { pos: Vec, velMag: Float, radius: Float }
-type GameEvent = Update (Float, Vec) | Locked | Reset | Unlocked
+type alias Game = { player: Actor
+                  , enemy: Actor
+                  , state: GameState
+                  , food: List Actor }
+type alias Actor = { pos: Vec, velMag: Float, radius: Float, color: Color }
+
+type GameEvent = Update (Float, Vec) | Locked | Reset | Unlocked | Food Actor
 type GameState = Waiting | Play | Dead
 
-initialPlayer : Player
-initialPlayer = { pos = (0,0), velMag = 0, radius = 15 }
+initialPlayer : Actor
+initialPlayer = { pos = (0,0), velMag = 0, radius = 15, color = black }
 
-initialEnemy : Player
-initialEnemy = { initialPlayer | pos <- (500, 500), velMag <- 5, radius <- 30 }
+initialEnemy : Actor
+initialEnemy = { initialPlayer | pos <- (500, 500), velMag <- 5, radius <- 30, color <- darkRed }
+
+initialFood : Actor
+initialFood = { initialPlayer | radius <- 10, color <- green }
 
 initialGame : Game
 initialGame = { player = initialPlayer,
                 enemy  = initialEnemy,
-                state  = Waiting }
+                state  = Waiting,
+                food   = [] }
 
-
--- FORMS --
-
-playerForm : Player -> Form
-playerForm player = circle player.radius |> filled black
-
-enemyForm : Player -> Form
-enemyForm enemy = circle enemy.radius |> filled darkRed
+randomFoodPosition = Random.pair (float 0 width) (float 0 height)
 
 
 -- UPDATE --
 
-updatePlayer : Vec -> Player -> Player
+updatePlayer : Vec -> Actor -> Actor
 updatePlayer p player = { player | pos <- p }
 
-updateEnemy : Time -> Player -> Player -> Player
+updateEnemy : Time -> Actor -> Actor -> Actor
 updateEnemy dt enemy player = { enemy
                               | pos    <- vecAdd enemy.pos (chaseVec enemy.velMag player.pos enemy.pos)
                               , velMag <- enemy.velMag + dt * velMagIncrease'
@@ -134,10 +137,15 @@ updateGameInPlay dt p g = let player' = updatePlayer p g.player
                                { g | state <- Dead }
                              else
                                { g | player <- player'
-                                   , enemy  <- enemy }
+                                   , enemy  <- enemy
+                                   , food   <- List.filter (not << (hit player')) g.food }
 
 updateGame : GameEvent -> Game -> Game
 updateGame e g = case e of
+                   Food f ->
+                     case g.state of
+                       Play -> { g | food <- f :: g.food }
+                       _    -> g
                    Update (dt, p) ->
                      case g.state of
                        Play -> updateGameInPlay dt p g
@@ -156,19 +164,15 @@ updateGame e g = case e of
 
 -- RENDER --
 
-renderPlayer : Player -> Form
-renderPlayer player = move (toMove player.pos) (playerForm player)
-
-renderEnemy : Player -> Form
-renderEnemy enemy = move (toMove enemy.pos) (enemyForm enemy)
+renderActor : Actor -> Form
+renderActor {pos, color, radius} = circle radius |> filled color |> move (toMove pos)
 
 renderToCollage : Game -> List Form
 renderToCollage game = case game.state of
                          Waiting ->
                            [ scale 2 <| text <| fromString "Click to lock pointer and start game"]
                          Play ->
-                           [ renderPlayer game.player,
-                             renderEnemy game.enemy ]
+                           List.map renderActor <| game.player :: game.enemy :: game.food
                          Dead ->
                            [ scale 2 <| text <| fromString "You're dead",
                              move (0, -30) <| scale 1.5 <| text <| fromString "Click to play again" ]
@@ -182,6 +186,12 @@ render (w, h) game = color gray <| container w h middle
 
 -- SIGNAL GRAPH --
 
+food : Signal Time
+food = every (2 * second)
+
+newFood : Time -> Actor
+newFood t =  { initialFood | pos <- round t |> initialSeed |> generate randomFoodPosition |> fst }
+
 position : Signal Vec
 position = foldp (\p p' -> vecAdd p p' |> boundedVec) (0, 0) movement
 
@@ -189,7 +199,8 @@ events : Signal GameEvent
 events = mergeMany
           [ map (\s -> if s then Locked else Unlocked) isLocked,
             map2 ((\dt p -> Update (dt, p))) frame <| sampleOn frame position,
-            map (always Reset) Mouse.clicks ]
+            map (always Reset) Mouse.clicks,
+            map (\t -> Food (newFood t)) food ]
 
 main : Signal Element
 main = render <~ Window.dimensions ~ Signal.foldp updateGame initialGame events
