@@ -5,7 +5,7 @@ import Graphics.Collage exposing (..)
 import Keyboard
 import Mouse
 import Signal exposing (..)
-import Text exposing (fromString)
+import Text exposing (fromString, typeface)
 import Time exposing (..)
 import Window
 import Random exposing (..)
@@ -34,15 +34,18 @@ port exitPointerLock =
 
 -- CONFIG --
 
-width   = 900
+width   = 800
 height  = 600
 hWidth  = width / 2
 hHeight = height / 2
 velMagIncrease = 0.0001
 
-startGameMessage = fromString "Click to lock pointer and start game"
-playAgainMessage = fromString "Click to play again"
-deadMessage = fromString "You're dead"
+font : Text.Text -> Text.Text
+font = typeface ["impact"]
+
+startGameMessage = font <| fromString "Click to lock pointer and start game"
+playAgainMessage = font <| fromString "Click to play again"
+deadMessage = font <| fromString "You're dead"
 
 -- HELPERS --
 
@@ -186,7 +189,7 @@ updateGame e g = case e of
 -- RENDER --
 
 renderPoints : Int -> Form
-renderPoints p = toString p |> fromString |> text |> scale 2 |> move (0, hHeight - 30)
+renderPoints p = toString p |> fromString |> font |> text |> scale 2 |> move (0, hHeight - 30)
 
 renderActor : Actor -> Form
 renderActor {pos, color, radius} = circle radius |> filled color |> move (toMove pos)
@@ -194,7 +197,7 @@ renderActor {pos, color, radius} = circle radius |> filled color |> move (toMove
 renderToCollage : Game -> List Form
 renderToCollage game = case game.state of
                          Play ->
-                           renderPoints game.points :: (List.map renderActor <| game.player :: game.enemy :: game.food)
+                           renderPoints game.points :: (List.map renderActor <| List.append game.food [game.player, game.enemy])
                          Waiting ->
                            [ scale 2 <| text <| startGameMessage]
                          Dead ->
