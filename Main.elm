@@ -40,7 +40,7 @@ hWidth  = width / 2
 hHeight = height / 2
 
 -- pixels per frame
-velMagIncrease = 0.01
+velMagIncrease = 0.005
 velMagIncrease' = velMagIncrease / 16
 
 
