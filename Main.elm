@@ -109,7 +109,7 @@ initialEnemy : Actor
 initialEnemy = { initialPlayer | pos <- (500, 500), velMag <- 5, radius <- 30, color <- darkRed }
 
 initialFood : Actor
-initialFood = { initialPlayer | radius <- 10, color <- green }
+initialFood = { initialPlayer | radius <- 10, color <- darkGreen }
 
 initialGame : Game
 initialGame = { player = initialPlayer
@@ -193,10 +193,10 @@ renderToCollage game = case game.state of
                              renderPoints game.points ]
 
 render : (Int, Int) -> Game -> Element
-render (w, h) game = color gray <| container w h middle
-                                <| color white
-                                <| collage width height
-                                <| renderToCollage game
+render (w, h) game = color darkRed <| container w h middle
+                                   <| color white
+                                   <| collage width height
+                                   <| renderToCollage game
 
 
 -- SIGNAL GRAPH --
