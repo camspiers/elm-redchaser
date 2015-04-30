@@ -139,7 +139,7 @@ updateGameInPlay : Time -> Vec -> Game -> Game
 updateGameInPlay dt p g = let player' = updatePlayer p g.player
                               enemy   = updateEnemy dt g.enemy player'
                               isHit   = hit player' enemy
-                              food    = List.filter (not << (hit player')) g.food
+                              food    = List.filter (hit player' >> not) g.food
                               points  = (List.length g.food) - (List.length food)
                           in if isHit then
                                { g | state <- Dead }
