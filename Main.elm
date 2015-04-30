@@ -67,13 +67,14 @@ vecLen (x, y) = sqrt (x * x + y * y)
 boundVel : Float -> Float -> Float
 boundVel a da = if abs a > abs da then 0 else a
 
-chaseVec : Float -> Vec -> Vec -> Vec
-chaseVec mag (ax, ay) (bx, by) = let dx = ax - bx
-                                     dy = ay - by
-                                     a  = atan2 dy dx
-                                     x  = (cos a) * mag
-                                     y  = (sin a) * mag
-                                 in ( boundVel x dx, boundVel y dy )
+chaseVec : Time -> Float -> Vec -> Vec -> Vec
+chaseVec dt mag (ax, ay) (bx, by) = let dx = ax - bx
+                                        dy = ay - by
+                                        a  = atan2 dy dx
+                                        x  = (cos a) * mag
+                                        y  = (sin a) * mag
+                                        scale = dt / 16
+                                    in ( scale * (boundVel x dx), scale * (boundVel y dy) )
 
 toMove : Vec -> Vec
 toMove (x, y) = (x - hWidth, -y + hHeight)
@@ -138,7 +139,7 @@ updatePlayer pos player = { player | pos <- pos }
 
 updateEnemy : Time -> Actor -> Actor -> Actor
 updateEnemy dt player enemy = { enemy
-                              | pos    <- vecAdd enemy.pos (chaseVec enemy.velMag player.pos enemy.pos)
+                              | pos    <- vecAdd enemy.pos <| chaseVec dt enemy.velMag player.pos enemy.pos
                               , velMag <- enemy.velMag + dt * velMagIncrease
                               }
 
