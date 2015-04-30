@@ -117,6 +117,9 @@ initialGame = { player = initialPlayer,
 
 randomFoodPosition = Random.pair (float 0 width) (float 0 height)
 
+newFood : Time -> Actor
+newFood t =  { initialFood | pos <- round t |> initialSeed |> generate randomFoodPosition |> fst }
+
 
 -- UPDATE --
 
@@ -144,7 +147,9 @@ updateGame : GameEvent -> Game -> Game
 updateGame e g = case e of
                    Food f ->
                      case g.state of
-                       Play -> { g | food <- f :: g.food }
+                       Play -> if   List.length g.food < 6
+                               then { g | food <- f :: g.food }
+                               else g
                        _    -> g
                    Update (dt, p) ->
                      case g.state of
@@ -188,9 +193,6 @@ render (w, h) game = color gray <| container w h middle
 
 food : Signal Time
 food = every (2 * second)
-
-newFood : Time -> Actor
-newFood t =  { initialFood | pos <- round t |> initialSeed |> generate randomFoodPosition |> fst }
 
 position : Signal Vec
 position = foldp (\p p' -> vecAdd p p' |> boundedVec) (0, 0) movement
