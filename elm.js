@@ -2657,6 +2657,12 @@ Elm.Keyboard.make = function (_elm) {
              ,right: d
              ,up: a};
    });
+   var dropMap = F2(function (f,
+   signal) {
+      return $Signal.dropRepeats(A2($Signal.map,
+      f,
+      signal));
+   });
    var EventInfo = F3(function (a,
    b,
    c) {
@@ -2710,29 +2716,29 @@ Elm.Keyboard.make = function (_elm) {
    update,
    empty,
    rawEvents);
-   var alt = A2($Signal.map,
+   var alt = A2(dropMap,
    function (_) {
       return _.alt;
    },
    model);
-   var meta = A2($Signal.map,
+   var meta = A2(dropMap,
    function (_) {
       return _.meta;
    },
    model);
-   var keysDown = A2($Signal.map,
+   var keysDown = A2(dropMap,
    function (_) {
       return _.keyCodes;
    },
    model);
-   var arrows = A2($Signal.map,
+   var arrows = A2(dropMap,
    toXY({_: {}
         ,down: 40
         ,left: 37
         ,right: 39
         ,up: 38}),
    keysDown);
-   var wasd = A2($Signal.map,
+   var wasd = A2(dropMap,
    toXY({_: {}
         ,down: 83
         ,left: 65
@@ -2740,7 +2746,7 @@ Elm.Keyboard.make = function (_elm) {
         ,up: 87}),
    keysDown);
    var isDown = function (keyCode) {
-      return A2($Signal.map,
+      return A2(dropMap,
       $Set.member(keyCode),
       keysDown);
    };
@@ -3229,7 +3235,7 @@ Elm.Main.make = function (_elm) {
                    ,_0: $Basics.toFloat(_v0._0)
                    ,_1: $Basics.toFloat(_v0._1)};}
          _U.badCase($moduleName,
-         "on line 82, column 17 to 37");
+         "on line 83, column 17 to 37");
       }();
    };
    var boundVel = F2(function (a,
@@ -3237,7 +3243,8 @@ Elm.Main.make = function (_elm) {
       return _U.cmp($Basics.abs(a),
       $Basics.abs(da)) > 0 ? 0 : a;
    });
-   var chaseVec = F3(function (mag,
+   var chaseVec = F4(function (dt,
+   mag,
    _v4,
    _v5) {
       return function () {
@@ -3247,20 +3254,21 @@ Elm.Main.make = function (_elm) {
                  switch (_v4.ctor)
                  {case "_Tuple2":
                     return function () {
+                         var scale = dt / 16;
                          var dy = _v4._1 - _v5._1;
                          var dx = _v4._0 - _v5._0;
                          var a = A2($Basics.atan2,dy,dx);
                          var x = $Basics.cos(a) * mag;
                          var y = $Basics.sin(a) * mag;
                          return {ctor: "_Tuple2"
-                                ,_0: A2(boundVel,x,dx)
-                                ,_1: A2(boundVel,y,dy)};
+                                ,_0: scale * A2(boundVel,x,dx)
+                                ,_1: scale * A2(boundVel,y,dy)};
                       }();}
                  _U.badCase($moduleName,
-                 "between lines 71 and 76");
+                 "between lines 71 and 77");
               }();}
          _U.badCase($moduleName,
-         "between lines 71 and 76");
+         "between lines 71 and 77");
       }();
    });
    var vecLen = function (_v12) {
@@ -3327,9 +3335,8 @@ Elm.Main.make = function (_elm) {
    player,
    enemy) {
       return _U.replace([["pos"
-                         ,A2(vecAdd,
-                         enemy.pos,
-                         A3(chaseVec,
+                         ,vecAdd(enemy.pos)(A4(chaseVec,
+                         dt,
                          enemy.velMag,
                          player.pos,
                          enemy.pos))]
@@ -3424,7 +3431,7 @@ Elm.Main.make = function (_elm) {
                    }();}
               break;}
          _U.badCase($moduleName,
-         "between lines 166 and 186");
+         "between lines 167 and 187");
       }();
    });
    var height = 600;
@@ -3447,7 +3454,7 @@ Elm.Main.make = function (_elm) {
                    ,_0: _v33._0 - hWidth
                    ,_1: 0 - _v33._1 + hHeight};}
          _U.badCase($moduleName,
-         "on line 79, column 18 to 42");
+         "on line 80, column 18 to 42");
       }();
    };
    var renderActor = function (_v37) {
@@ -3475,7 +3482,7 @@ Elm.Main.make = function (_elm) {
             case "Waiting":
             return _L.fromArray([$Graphics$Collage.scale(2)($Graphics$Collage.text(startGameMessage))]);}
          _U.badCase($moduleName,
-         "between lines 198 and 206");
+         "between lines 199 and 207");
       }();
    };
    var boundX = A2($Basics.clamp,
@@ -3489,7 +3496,7 @@ Elm.Main.make = function (_elm) {
                    ,_0: boundX(_v40._0)
                    ,_1: boundY(_v40._1)};}
          _U.badCase($moduleName,
-         "on line 94, column 22 to 40");
+         "on line 95, column 22 to 40");
       }();
    };
    var randomPosition = A2($Random.pair,
@@ -3512,7 +3519,7 @@ Elm.Main.make = function (_elm) {
               width,
               height)(renderToCollage(game)))));}
          _U.badCase($moduleName,
-         "between lines 209 and 212");
+         "between lines 210 and 213");
       }();
    });
    var isLocked = Elm.Native.Port.make(_elm).inboundSignal("isLocked",
@@ -3793,6 +3800,7 @@ Elm.Native.AnimationFrame.make = function(localRuntime) {
   };
 
 };
+
 Elm.Native.Basics = {};
 Elm.Native.Basics.make = function(localRuntime) {
 
@@ -7010,6 +7018,7 @@ Elm.Native.Signal.make = function(localRuntime) {
 		var node = {
 			id: Utils.guid(),
 			name: 'merge',
+			value: A2(tieBreaker, leftStream.value, rightStream.value),
 			parents: [leftStream, rightStream],
 			kids: []
 		};
