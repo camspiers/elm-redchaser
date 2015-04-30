@@ -94,7 +94,9 @@ type alias Vec = (Float, Float)
 type alias Game = { player: Actor
                   , enemy: Actor
                   , state: GameState
-                  , food: List Actor }
+                  , food: List Actor
+                  , points: Int }
+
 type alias Actor = { pos: Vec, velMag: Float, radius: Float, color: Color }
 
 type GameEvent = Update (Float, Vec) | Locked | Reset | Unlocked | Food Actor
@@ -110,10 +112,11 @@ initialFood : Actor
 initialFood = { initialPlayer | radius <- 10, color <- green }
 
 initialGame : Game
-initialGame = { player = initialPlayer,
-                enemy  = initialEnemy,
-                state  = Waiting,
-                food   = [] }
+initialGame = { player = initialPlayer
+              , enemy  = initialEnemy
+              , state  = Waiting
+              , food   = []
+              , points = 0 }
 
 randomFoodPosition = Random.pair (float 0 width) (float 0 height)
 
@@ -136,24 +139,27 @@ updateGameInPlay : Time -> Vec -> Game -> Game
 updateGameInPlay dt p g = let player' = updatePlayer p g.player
                               enemy   = updateEnemy dt g.enemy player'
                               isHit   = hit player' enemy
+                              food    = List.filter (not << (hit player')) g.food
+                              points  = (List.length g.food) - (List.length food)
                           in if isHit then
                                { g | state <- Dead }
                              else
                                { g | player <- player'
                                    , enemy  <- enemy
-                                   , food   <- List.filter (not << (hit player')) g.food }
+                                   , food   <- food
+                                   , points <- g.points + points }
 
 updateGame : GameEvent -> Game -> Game
 updateGame e g = case e of
+                   Update (dt, p) ->
+                     case g.state of
+                       Play -> updateGameInPlay dt p g
+                       _    -> g
                    Food f ->
                      case g.state of
                        Play -> if   List.length g.food < 6
                                then { g | food <- f :: g.food }
                                else g
-                       _    -> g
-                   Update (dt, p) ->
-                     case g.state of
-                       Play -> updateGameInPlay dt p g
                        _    -> g
                    Locked ->
                      case g.state of
@@ -169,15 +175,18 @@ updateGame e g = case e of
 
 -- RENDER --
 
+renderPoints : Int -> Form
+renderPoints p = toString p |> fromString |> text |> scale 2 |> move (0, hHeight - 30)
+
 renderActor : Actor -> Form
 renderActor {pos, color, radius} = circle radius |> filled color |> move (toMove pos)
 
 renderToCollage : Game -> List Form
 renderToCollage game = case game.state of
+                         Play ->
+                           renderPoints game.points :: (List.map renderActor <| game.player :: game.enemy :: game.food)
                          Waiting ->
                            [ scale 2 <| text <| fromString "Click to lock pointer and start game"]
-                         Play ->
-                           List.map renderActor <| game.player :: game.enemy :: game.food
                          Dead ->
                            [ scale 2 <| text <| fromString "You're dead",
                              move (0, -30) <| scale 1.5 <| text <| fromString "Click to play again" ]
