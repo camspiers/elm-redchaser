@@ -209,7 +209,7 @@ render (w, h) game = color darkRed <| container w h middle
                                    <| renderToCollage game
 
 
--- SIGNAL GRAPH --
+-- SIGNALS --
 
 food : Signal Time
 food = every (2 * second)
