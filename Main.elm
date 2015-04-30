@@ -147,7 +147,8 @@ updateGameInPlay dt pos g = let player' = updatePlayer g.player pos
                                 food'   = updateFood   g.food   player'
                                 points' = updatePoints g.points g.food  food'
                             in if hit player' enemy' then
-                                 { g | state <- Dead }
+                                 { g | state <- Dead
+                                     , points <- points' }
                                else
                                  { g | player <- player'
                                      , enemy  <- enemy'
