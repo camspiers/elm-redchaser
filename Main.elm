@@ -46,14 +46,17 @@ deadMessage = fromString "You're dead"
 
 -- HELPERS --
 
+vecOp : (Float -> Float -> Float) -> Vec -> Vec -> Vec
+vecOp op (ax, ay) (bx, by) = (op ax bx, op ay by)
+
 vecAdd : Vec -> Vec -> Vec
-vecAdd (ax, ay) (bx, by) = (ax + bx, ay + by)
+vecAdd = vecOp (+)
 
 vecMul : Vec -> Vec -> Vec
-vecMul (ax, ay) (bx, by) = (ax * bx, ay * by)
+vecMul = vecOp (*)
 
 vecSub : Vec -> Vec -> Vec
-vecSub (ax, ay) (bx, by) = (ax - bx, ay - by)
+vecSub = vecOp (-)
 
 vecLen : Vec -> Float
 vecLen (x, y) = sqrt (x * x + y * y)
