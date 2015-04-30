@@ -126,34 +126,34 @@ newFood t =  { initialFood | pos <- round t |> initialSeed |> generate randomFoo
 
 -- UPDATE --
 
-updatePlayer : Actor -> Vec -> Actor
-updatePlayer player pos = { player | pos <- pos }
+updatePlayer : Vec -> Actor -> Actor
+updatePlayer pos player = { player | pos <- pos }
 
-updateEnemy : Actor -> Actor -> Time -> Actor
-updateEnemy enemy player dt = { enemy
+updateEnemy : Time -> Actor -> Actor -> Actor
+updateEnemy dt player enemy = { enemy
                               | pos    <- vecAdd enemy.pos (chaseVec enemy.velMag player.pos enemy.pos)
                               , velMag <- enemy.velMag + dt * velMagIncrease
                               }
 
-updateFood : List Actor -> Actor -> List Actor
-updateFood food player = List.filter (hit player >> not) food
+updateFood : Actor -> List Actor -> List Actor
+updateFood player food = List.filter (hit player >> not) food
 
-updatePoints : Int -> List Actor -> List Actor -> Int
-updatePoints points food food' = points + (List.length food) - (List.length food')
+updatePoints : List Actor -> List Actor -> Int -> Int
+updatePoints food food' points = points + (List.length food) - (List.length food')
 
 updateGameInPlay : Time -> Vec -> Game -> Game
-updateGameInPlay dt pos g = let player' = updatePlayer g.player pos
-                                enemy'  = updateEnemy  g.enemy  player' dt
-                                food'   = updateFood   g.food   player'
-                                points' = updatePoints g.points g.food  food'
+updateGameInPlay dt pos game = let player' = updatePlayer pos game.player
+                                   enemy'  = updateEnemy  dt player' game.enemy
+                                   food'   = updateFood   player' game.food
+                                   points' = updatePoints game.food food' game.points
                             in if hit player' enemy' then
-                                 { g | state <- Dead
-                                     , points <- points' }
+                                 { game | state <- Dead
+                                        , points <- points' }
                                else
-                                 { g | player <- player'
-                                     , enemy  <- enemy'
-                                     , food   <- food'
-                                     , points <- points' }
+                                 { game | player <- player'
+                                        , enemy  <- enemy'
+                                        , food   <- food'
+                                        , points <- points' }
 
 updateGame : GameEvent -> Game -> Game
 updateGame e g = case e of
