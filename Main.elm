@@ -38,11 +38,11 @@ width   = 900
 height  = 600
 hWidth  = width / 2
 hHeight = height / 2
+velMagIncrease = 0.0001
 
--- pixels per frame
-velMagIncrease = 0.005
-velMagIncrease' = velMagIncrease / 16
-
+startGameMessage = fromString "Click to lock pointer and start game"
+playAgainMessage = fromString "Click to play again"
+deadMessage = fromString "You're dead"
 
 -- HELPERS --
 
@@ -132,7 +132,7 @@ updatePlayer p player = { player | pos <- p }
 updateEnemy : Time -> Actor -> Actor -> Actor
 updateEnemy dt enemy player = { enemy
                               | pos    <- vecAdd enemy.pos (chaseVec enemy.velMag player.pos enemy.pos)
-                              , velMag <- enemy.velMag + dt * velMagIncrease'
+                              , velMag <- enemy.velMag + dt * velMagIncrease
                               }
 
 updateGameInPlay : Time -> Vec -> Game -> Game
@@ -186,10 +186,11 @@ renderToCollage game = case game.state of
                          Play ->
                            renderPoints game.points :: (List.map renderActor <| game.player :: game.enemy :: game.food)
                          Waiting ->
-                           [ scale 2 <| text <| fromString "Click to lock pointer and start game"]
+                           [ scale 2 <| text <| startGameMessage]
                          Dead ->
-                           [ scale 2 <| text <| fromString "You're dead",
-                             move (0, -30) <| scale 1.5 <| text <| fromString "Click to play again" ]
+                           [ scale 2 <| text <| deadMessage,
+                             move (0, -30) <| scale 1.5 <| text <| playAgainMessage,
+                             renderPoints game.points ]
 
 render : (Int, Int) -> Game -> Element
 render (w, h) game = color gray <| container w h middle
@@ -213,5 +214,8 @@ events = mergeMany
             map (always Reset) Mouse.clicks,
             map (\t -> Food (newFood t)) food ]
 
+game : Signal Game
+game = Signal.foldp updateGame initialGame events
+
 main : Signal Element
-main = render <~ Window.dimensions ~ Signal.foldp updateGame initialGame events
+main = Signal.map2 render Window.dimensions game
