@@ -90,6 +90,9 @@ boundY = clamp 0 height
 boundedVec : Vec -> Vec
 boundedVec (x, y) = (boundX x, boundY y)
 
+randomPosition : Generator Vec
+randomPosition = Random.pair (float 0 width) (float 0 height)
+
 
 -- MODEL --
 
@@ -121,10 +124,8 @@ initialGame = { player = initialPlayer
               , food   = []
               , points = 0 }
 
-randomFoodPosition = Random.pair (float 0 width) (float 0 height)
-
 newFood : Time -> Actor
-newFood t =  { initialFood | pos <- round t |> initialSeed |> generate randomFoodPosition |> fst }
+newFood t =  { initialFood | pos <- round t |> initialSeed |> generate randomPosition |> fst }
 
 
 -- UPDATE --
@@ -149,14 +150,14 @@ updateGameInPlay dt pos game = let player' = updatePlayer pos game.player
                                    enemy'  = updateEnemy  dt player' game.enemy
                                    food'   = updateFood   player' game.food
                                    points' = updatePoints game.food food' game.points
-                            in if hit player' enemy' then
-                                 { game | state <- Dead
-                                        , points <- points' }
-                               else
-                                 { game | player <- player'
-                                        , enemy  <- enemy'
-                                        , food   <- food'
-                                        , points <- points' }
+                               in if hit player' enemy' then
+                                   { game | state <- Dead
+                                          , points <- points' }
+                                 else
+                                   { game | player <- player'
+                                          , enemy  <- enemy'
+                                          , food   <- food'
+                                          , points <- points' }
 
 updateGame : GameEvent -> Game -> Game
 updateGame e g = case e of
